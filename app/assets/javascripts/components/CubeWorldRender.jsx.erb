@@ -1,0 +1,223 @@
+const CubeWorldRender = React.createClass({
+	render(){
+		var scene, camera, renderer;
+		var cubeGeometry, cube, material;
+		var sphereGeometry, sphere;
+		var objects = [];
+		var lastTime;
+		var sceneRotationSpeed = 0.0002;
+		var playing = false;
+
+//====================================================================================================================
+// SCENE SETUP 
+//====================================================================================================================
+
+		scene = new THREE.Scene();
+		scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+//====================================================================================================================
+// CAMERA SETUP 
+//====================================================================================================================
+
+		camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 1, 4000 );
+		camera.position.z = 700;
+
+//====================================================================================================================
+// RENDERER SETUP 
+//====================================================================================================================
+
+		renderer = new THREE.WebGLRenderer();
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		// renderer.shadowMap.enabled = true;
+		// renderer.shadowMap.type = THREE.BasicShadowMap;
+		renderer.setPixelRatio( window.devicePixelRatio );
+		renderer.setClearColor(0x000000, 1);
+
+		$domElement = $(renderer.domElement);
+		$domElement.addClass('sceneCanvas');
+
+		document.body.insertBefore($domElement[0], document.body.firstChild);
+
+//====================================================================================================================
+// LIGHTS 
+//====================================================================================================================
+
+		var mainLight = new THREE.HemisphereLight( 0x404040, 0x101010, 10 );
+		mainLight.name = "Main Light";
+		scene.add( mainLight );
+
+//====================================================================================================================
+// RESIZER 
+//====================================================================================================================
+
+		var onWindowResize = function(event) {
+	    camera.aspect = window.innerWidth / window.innerHeight;
+	    camera.updateProjectionMatrix();
+
+	    renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+//====================================================================================================================
+// PARTICLES 
+//====================================================================================================================
+	
+	var particleCount = 1024;
+
+	for ( var i = 0; i < particleCount; i++ ) {
+
+		var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+
+		var pMaterial = new THREE.MeshLambertMaterial({
+		  color: Math.random() * 0x808008 + 0x808080,
+		  blending: THREE.AdditiveAlphaBlending
+		});
+
+		var particle = new THREE.Mesh( geometry, pMaterial );
+			particle.name = "Cube Particle";
+			particle.position.x = Math.random() * 2000 - 1000;
+			particle.position.y = Math.random() * 2000 - 1000;
+			particle.position.z = Math.random() * 2000 - 1000;
+			particle.scale.x = particle.scale.y = particle.scale.z = 0;
+			particle.rotateSpeed = Math.random() * 0.008;
+
+		scene.add(particle);
+	}
+
+	// var particleSystem = new THREE.ParticleSystem(particles, pMaterial);
+	// scene.add( particleSystem );
+
+//====================================================================================================================
+// RENDERING & ANIMATING
+//====================================================================================================================
+		var render = function() {
+		    requestAnimationFrame(render); //loops
+
+		    var time = Date.now() * 0.00005;
+
+		    for (i = 0; i < objects.length; i++) {
+	        var object = objects[i];
+		    }	
+
+//======//============================================================================================================
+				// SCENE ROTATION AND CUBE ROTATION
+//======//============================================================================================================
+				
+				scene.rotation.x += sceneRotationSpeed;
+				scene.rotation.y += sceneRotationSpeed * 2;
+
+				for (var i = 0; i < scene.children.length; i++) {
+					var sceneChild = scene.children[i];
+					if (sceneChild.name === "Cube Particle" ) {
+						sceneChild.rotation.x += sceneChild.rotateSpeed + sceneRotationSpeed;
+            sceneChild.rotation.y += sceneChild.rotateSpeed + sceneRotationSpeed;
+            sceneChild.rotation.z += sceneChild.rotateSpeed + sceneRotationSpeed;
+					} else if ( sceneChild.name === "Main Light" ) {
+						sceneChild.position.x += sceneRotationSpeed;
+						sceneChild.position.y += sceneRotationSpeed * 2;
+					}
+				}
+
+//======//============================================================================================================
+				// RENDER THAT SHIT
+//======//============================================================================================================
+
+		    renderer.render(scene, camera);
+		};
+
+//====================================================================================================================
+// AUDIO
+//====================================================================================================================
+
+		// Create a new instance of an audio object and adjust some of its properties
+		var audio = new Audio();
+		// audio.src = "<%= asset_path '052406.mp3' %>";
+
+		// https://soundcloud.com/headphoneactivist/silent-flo
+		SC.initialize({
+	    client_id: '1c9f160d24af014540a03be9e0afa4c6',
+	    client_secret: 'f73aaa79abe4fe1d02e87030c98baa1b'
+	  });
+
+		SC.get('/resolve', {
+			url: 'http://soundcloud.com/headphoneactivist/silent-flo',
+			client_id: '1c9f160d24af014540a03be9e0afa4c6'
+		}).then(function(track) {
+			audio.src = track.stream_url + '?client_id=1c9f160d24af014540a03be9e0afa4c6';
+		});
+
+		audio.controls = true;
+		audio.loop = true;
+		audio.autoplay = true;
+	  audio.crossOrigin="anonymous";
+
+    $(audio).on('canplay', function() {
+    	if(!playing){
+	  		initMp3Player();
+	  	}
+		});
+
+		// Establish all variables that your Analyser will use
+		var canvas, ctx, source, context, analyser, fbc_array, bars, bar_x, bar_width, bar_height;
+
+		var frameLooper = function (){
+		    window.requestAnimationFrame(frameLooper);
+
+		    fbc_array = new Uint8Array(analyser.frequencyBinCount);
+		    analyser.getByteFrequencyData(fbc_array);
+
+		    for (var i = 0; i < scene.children.length; i++) {
+					var sceneChild = scene.children[i];
+					if (sceneChild.name === "Cube Particle" ) {
+
+						var scale = Math.pow((fbc_array[i] / 20), 2);
+						if ( scale > 0 ) {
+							sceneChild.scale.x = sceneChild.scale.y = sceneChild.scale.z = scale;
+						} else {
+							sceneChild.scale.x = sceneChild.scale.y = sceneChild.scale.z = 1;
+						}
+					}
+				}
+
+				var sum = 0;
+				for ( var i = 0; i < fbc_array.length; i++ ) {
+				    sum += parseInt( fbc_array[i], 10 ); //don't forget to add the base
+				}
+
+				var avg = sum / fbc_array.length;
+
+				if (avg) {
+					sceneRotationSpeed = 0.0006 * (avg / 10);
+				} else {
+					sceneRotationSpeed = 0.0001
+				}
+		}
+
+		var initMp3Player = function (){
+				playing = true;
+		    document.getElementById('audio_box').appendChild(audio);
+		    context = new AudioContext(); // AudioContext object instance
+		    analyser = context.createAnalyser(); // AnalyserNode method
+		    canvas = document.getElementById('analyser_render');
+		    ctx = canvas.getContext('2d');
+		    // Re-route audio playback into the processing graph of the AudioContext
+		    source = context.createMediaElementSource(audio); 
+		    source.connect(analyser);
+		    analyser.connect(context.destination);
+		    frameLooper();
+		}
+		// frameLooper() animates any style of graphics you wish to the audio frequency
+		// Looping at the default frame rate that the browser provides(approx. 60 FPS)
+
+//====================================================================================================================
+// INITIALIZE
+//====================================================================================================================
+
+		$(document).ready(function() {
+		    render();
+
+		    window.addEventListener('resize', onWindowResize, false);
+		});
+
+		return (<div></div>);
+	}
+}); 

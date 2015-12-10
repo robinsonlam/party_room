@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PartyRoom</title>
+  <%= stylesheet_link_tag    'application', media: 'all' %>
+	<script src="https://connect.soundcloud.com/sdk/sdk-3.0.0.js"></script>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+
+	<nav id='globalNav'>
+		<ul>
+			<%= link_to root_path do %>
+				<li>Home</li>
+			<% end %>
+			
+			<%= link_to cubeworld_path do %>
+				<li>Cube World</li>
+			<% end %>
+
+			<%= link_to hyperdrive_path do %>
+				<li>Hyperdrive</li>
+			<% end %>
+
+			<%= link_to ballroom_path do %>
+				<li>Ball Room</li>
+			<% end %>
+
+
+			<%= link_to physicsroom_path do %>
+				<li>Physics Room</li>
+			<% end %>
+			<%= link_to cubeforest_path do %>
+				<li>CubeForest Room</li>
+			<% end %>
+		</ul>
+	</nav>
+
+	<%= yield %>
+
+	<%= react_component('AudioPlayer') %>
+	
+  <%= javascript_include_tag 'application' %>
+</body>
+</html>
