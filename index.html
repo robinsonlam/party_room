@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Party Room · Cube World</title>
+    <link rel="stylesheet" href="/src/demo.css" />
+  </head>
+  <body>
+    <main id="room" aria-label="Cube World audio visualiser"></main>
+
+    <section class="panel" aria-label="Controls">
+      <h1>Cube World</h1>
+      <p class="hint" id="status">1,024 cubes, each listening to a frequency. Pick a sound source.</p>
+      <div class="buttons">
+        <button type="button" id="demo">▶ Demo beat</button>
+        <button type="button" id="mic">🎤 Microphone</button>
+        <label class="button" for="file">♫ Audio file</label>
+        <input type="file" id="file" accept="audio/*" hidden />
+        <button type="button" id="stop" disabled>■ Stop</button>
+      </div>
+      <div id="player"></div>
+
+      <form id="spotify-form" class="spotify">
+        <label for="spotify">Spotify link</label>
+        <div class="row">
+          <input id="spotify" type="url" placeholder="https://open.spotify.com/track/…" autocomplete="off" />
+          <button type="submit">Show</button>
+        </div>
+        <p class="hint">
+          Spotify doesn't let web pages read its audio, so the room can't analyse it directly. Play it here,
+          then switch on the microphone and the cubes will dance to it through your speakers.
+        </p>
+        <div id="embed"></div>
+      </form>
+    </section>
+
+    <script type="module" src="/src/demo.ts"></script>
+  </body>
+</html>

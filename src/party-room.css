@@ -1,0 +1,7 @@
+/* The room fills whatever element it is mounted in. */
+.party-room-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
