@@ -1,7 +1,8 @@
-// Audio sources that work in browsers today: a generated demo beat, the microphone, or a local file.
+// Audio sources that work in browsers today: a generated demo beat, the microphone, a local file, or a
+// streamed track from a CORS-enabled source (the music picker uses Audius; see music.ts).
 // (The 2015 app streamed from SoundCloud's v1 API with a hard-coded client id; that access is gone.)
 
-export type SourceKind = "demo" | "mic" | "file";
+export type SourceKind = "demo" | "mic" | "file" | "stream";
 
 export class AudioEngine {
   readonly bins = new Uint8Array(1024); // fftSize 2048 -> 1024 bins, one per cube as in 2015
@@ -128,21 +129,48 @@ export class AudioEngine {
 
   /** Play a local audio file the visitor chose. Returns the <audio> element (with controls) for the page to show. */
   playFile(file: File): HTMLAudioElement {
+    const url = URL.createObjectURL(file);
+    const el = this.playElement(url, "file", { loop: true });
+    const stop = this.stopCurrent;
+    this.stopCurrent = () => {
+      stop?.();
+      URL.revokeObjectURL(url);
+    };
+    return el;
+  }
+
+  /**
+   * Stream audio from a URL and analyse it. The server must send CORS headers (Audius does): without them the
+   * browser silences a cross-origin element routed through Web Audio. Call from a click. `onError` fires if the
+   * stream can't be loaded or played. Returns the <audio> element (with controls) for the page to show.
+   */
+  playUrl(url: string, onError?: (message: string) => void): HTMLAudioElement {
+    const el = this.playElement(url, "stream", { crossOrigin: true });
+    el.addEventListener("error", () => onError?.("This track couldn't be streamed. Try another one."), { once: true });
+    return el;
+  }
+
+  private playElement(url: string, kind: SourceKind, opts: { loop?: boolean; crossOrigin?: boolean }): HTMLAudioElement {
     this.stop();
     const { ctx, analyser } = this.context();
-    const url = URL.createObjectURL(file);
-    const el = new Audio(url);
+    const el = new Audio();
+    if (opts.crossOrigin) el.crossOrigin = "anonymous"; // must be set before src, or the analyser reads silence
+    el.src = url;
     el.controls = true;
-    el.loop = true;
+    el.loop = !!opts.loop;
+    el.preload = "auto";
     const src = ctx.createMediaElementSource(el);
     src.connect(analyser);
     analyser.connect(ctx.destination);
-    void el.play();
-    this.kind = "file";
+    el.play().catch(() => {
+      /* autoplay refusal or load failure: the element's error event / controls handle it */
+    });
+    this.kind = kind;
     this.stopCurrent = () => {
       el.pause();
+      el.removeAttribute("src");
+      el.load();
       src.disconnect();
-      URL.revokeObjectURL(url);
       el.remove();
     };
     return el;

@@ -146,3 +146,4 @@ export function createPartyRoom(container: HTMLElement, opts: PartyRoomOptions =
 
 export { AudioEngine } from "./audio.ts";
 export { parseSpotify, spotifyEmbedUrl } from "./logic.ts";
+export { trending, search, streamUrl, formatDuration, MusicError, type MusicTrack } from "./music.ts";

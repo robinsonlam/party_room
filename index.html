@@ -20,6 +20,18 @@
         <button type="button" id="stop" disabled>■ Stop</button>
       </div>
       <div id="player"></div>
+      <section class="music" aria-labelledby="music-title">
+        <h2 id="music-title">Music picker</h2>
+        <form id="music-search" class="row" role="search">
+          <label for="music-q" class="visually-hidden">Search Audius</label>
+          <input id="music-q" type="search" placeholder="Search Audius: artist, title, genre" autocomplete="off" />
+          <button type="submit">Search</button>
+        </form>
+        <p class="hint" id="music-status" role="status" aria-live="polite">Loading trending tracks…</p>
+        <ul id="music-list" class="tracks" aria-label="Tracks"></ul>
+        <div id="now-playing" class="now-playing" hidden></div>
+        <p class="hint credit">Music streamed from <a href="https://audius.co" target="_blank" rel="noopener">Audius</a> through its open API. Follow a title to support the artist.</p>
+      </section>
 
       <form id="spotify-form" class="spotify">
         <label for="spotify">Spotify link</label>

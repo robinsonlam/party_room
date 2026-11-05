@@ -113,3 +113,126 @@ button:disabled {
   border: 0;
   border-radius: 12px;
 }
+
+/* ---------- Music picker ---------- */
+
+.music {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #2a2a33;
+}
+
+.music h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.music .row input[type="search"] {
+  appearance: none;
+}
+
+.tracks {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  max-height: min(260px, 32vh);
+  overflow-y: auto;
+  border-radius: 8px;
+  overscroll-behavior: contain;
+}
+
+.tracks[aria-busy="true"] {
+  opacity: 0.5;
+}
+
+.tracks button {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.tracks button:hover,
+.tracks button[aria-pressed="true"] {
+  background: #23232c;
+  color: inherit;
+}
+
+.tracks button[aria-pressed="true"] .title::before {
+  content: "▶ ";
+  color: #9fd3ff;
+}
+
+.tracks .art {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #3a2b55, #1c3a4a);
+  overflow: hidden;
+}
+
+.tracks .art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tracks .text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tracks .title,
+.tracks .artist {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tracks .artist,
+.tracks .duration {
+  color: #b8b8c4;
+  font-size: 12px;
+}
+
+.now-playing {
+  margin-top: 8px;
+}
+
+.now-playing p {
+  margin: 2px 0;
+}
+
+.now-playing a,
+.credit a {
+  color: #9fd3ff;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* On phones keep the room visible: the panel takes the lower part of the screen and scrolls. */
+@media (max-width: 600px) {
+  .panel {
+    max-height: 55vh;
+  }
+
+  .tracks {
+    max-height: none;
+    overflow: visible;
+  }
+}
