@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatDuration, fromAudius, streamUrl, tracksFrom } from "./music.ts";
+import { MusicError } from "../application/ports.ts";
+import { formatDuration } from "../domain/track.ts";
+import { AudiusCatalogue, fromAudius, tracksFrom } from "./audius-catalogue.ts";
 
 const raw = {
   id: "AK3w5q0",
@@ -52,5 +54,30 @@ test("formats durations", () => {
 });
 
 test("stream URL identifies the app and escapes the id", () => {
-  assert.equal(streamUrl({ id: "a b" }), "https://api.audius.co/v1/tracks/a%20b/stream?app_name=musketeer-party-room");
+  assert.equal(new AudiusCatalogue().streamUrl({ id: "a b" }), "https://api.audius.co/v1/tracks/a%20b/stream?app_name=musketeer-party-room");
+});
+
+const respond = (status: number, body: unknown = {}) => async () => new Response(JSON.stringify(body), { status });
+
+test("queries trending and search with the app name, falling back to trending for blank searches", async () => {
+  const urls: string[] = [];
+  const catalogue = new AudiusCatalogue({
+    fetch: async (input) => {
+      urls.push(String(input));
+      return new Response(JSON.stringify({ data: [raw] }));
+    },
+  });
+  assert.equal((await catalogue.trending({ limit: 5 }))[0].id, "AK3w5q0");
+  await catalogue.search("  lo fi ");
+  await catalogue.search("   ");
+  assert.equal(urls[0], "https://api.audius.co/v1/tracks/trending?time=week&limit=5&app_name=musketeer-party-room");
+  assert.equal(urls[1], "https://api.audius.co/v1/tracks/search?query=lo+fi&limit=20&app_name=musketeer-party-room");
+  assert.match(urls[2], /\/tracks\/trending\?/);
+});
+
+test("turns failures into messages for the visitor", async () => {
+  await assert.rejects(new AudiusCatalogue({ fetch: respond(429) }).trending(), (e) => e instanceof MusicError && /busy/.test(e.message));
+  await assert.rejects(new AudiusCatalogue({ fetch: respond(500) }).trending(), /error \(500\)/);
+  const offline = new AudiusCatalogue({ fetch: async () => { throw new TypeError("failed"); } });
+  await assert.rejects(offline.trending(), (e) => e instanceof MusicError && /reach Audius/.test(e.message));
 });

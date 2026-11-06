@@ -33,8 +33,8 @@ npm run build   # static site in dist/
 ## Embed it
 
 ```ts
-import { createPartyRoom } from "./src/party-room.ts";
-import "./src/party-room.css";
+import { createPartyRoom } from "./src/index.ts";
+import "./src/ui/party-room.css";
 
 const room = createPartyRoom(element);   // fills `element`; give it a size
 room.audio.playDemo();                     // call from a click (browsers block autoplay)
@@ -44,10 +44,10 @@ room.destroy();                            // stops audio, frees WebGL, removes 
 
 ### Music picker API
 
-`src/music.ts` is framework-free, so any UI can render the picker:
+The catalogue is framework-free, so any UI can render the picker:
 
 ```ts
-import { trending, search, streamUrl, formatDuration, type MusicTrack } from "./src/party-room.ts";
+import { trending, search, streamUrl, formatDuration, type MusicTrack } from "./src/index.ts";
 
 const tracks: MusicTrack[] = await trending({ limit: 20 });   // or search("lofi", { signal })
 room.audio.playUrl(streamUrl(tracks[0]), (msg) => showError(msg)); // call from a click
@@ -55,6 +55,23 @@ room.audio.playUrl(streamUrl(tracks[0]), (msg) => showError(msg)); // call from 
 ```
 
 Requests identify the app with `app_name` (no key needed for read-only use). Audius's free plan allows 10 requests a second and 500,000 a month ([docs](https://docs.audius.co/developers/api)). Tracks whose artists opted out of API access, or that are gated, are filtered out.
+
+## Architecture
+
+The code is split into layers. Inner layers never import outer ones, and `src/architecture.test.ts` fails the build if they do.
+
+| Layer | Folder | Holds |
+| --- | --- | --- |
+| Domain | `src/domain/` | The Cube World rules (`cube-world.ts`: scatter, sizes, spin, `stepCubeWorld`), `MusicTrack` and Spotify links. Pure TypeScript, no DOM. |
+| Application | `src/application/` | Ports (`SpectrumSource`, `MusicCatalogue`) and the `browseMusic` use case. |
+| Infrastructure | `src/infrastructure/` | Adapters: `AudioEngine` (Web Audio) playing one `AudioSource` at a time (`DemoBeat`, `Microphone`, `MediaElement`), and `AudiusCatalogue`. |
+| UI | `src/ui/`, `src/demo/` | The three.js renderer (`createCubeWorldView`, which reads any `SpectrumSource`), its CSS, and the demo page. |
+
+`src/index.ts` is the public API and composition root: `createPartyRoom` wires an `AudioEngine` to the renderer.
+
+To add a sound source, write a class that implements `AudioSource` and call `room.audio.play(new MySource())`. The engine doesn't change. To use another music service, implement `MusicCatalogue`.
+
+`npm test` runs the domain, use-case, adapter and boundary tests (Node's test runner, no browser needed).
 
 ## What changed from 2015
 

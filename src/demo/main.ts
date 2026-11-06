@@ -1,11 +1,11 @@
-import { createPartyRoom, formatDuration, MusicError, parseSpotify, search, spotifyEmbedUrl, streamUrl, trending, type MusicTrack } from "./party-room.ts";
+import { browseMusic, createPartyRoom, formatDuration, music, parseSpotify, spotifyEmbedUrl, type MusicTrack, type SourceKind } from "../index.ts";
 
 const room = createPartyRoom(document.getElementById("room")!);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const status = $("status"), player = $("player"), stop = $<HTMLButtonElement>("stop");
 const buttons = { demo: $<HTMLButtonElement>("demo"), mic: $<HTMLButtonElement>("mic") };
 
-const setActive = (kind: "demo" | "mic" | "file" | "stream" | null, text: string) => {
+const setActive = (kind: SourceKind | null, text: string) => {
   buttons.demo.setAttribute("aria-pressed", String(kind === "demo"));
   buttons.mic.setAttribute("aria-pressed", String(kind === "mic"));
   stop.disabled = kind === null;
@@ -112,7 +112,7 @@ function render(tracks: MusicTrack[]) {
 }
 
 function play(track: MusicTrack) {
-  const el = room.audio.playUrl(streamUrl(track), (message) => {
+  const el = room.audio.playUrl(music.streamUrl(track), (message) => {
     setActive(null, message);
     musicStatus.textContent = `"${track.title}" couldn't be streamed. Pick another track.`;
   });
@@ -127,14 +127,11 @@ async function load(query: string) {
   musicStatus.textContent = query ? `Searching for "${query}"…` : "Loading trending tracks…";
   list.setAttribute("aria-busy", "true");
   try {
-    const tracks = query ? await search(query, { signal: request.signal }) : await trending({ signal: request.signal });
+    const { tracks, message } = await browseMusic(music, query, { signal: request.signal });
     render(tracks);
-    musicStatus.textContent = tracks.length
-      ? query ? `${tracks.length} tracks for "${query}".` : "Trending on Audius this week."
-      : query ? `No playable tracks for "${query}".` : "No trending tracks right now.";
-  } catch (err) {
-    if ((err as Error).name === "AbortError") return;
-    musicStatus.textContent = err instanceof MusicError ? err.message : "Something went wrong loading tracks.";
+    musicStatus.textContent = message;
+  } catch {
+    return; // superseded by a newer request
   } finally {
     list.removeAttribute("aria-busy");
   }
